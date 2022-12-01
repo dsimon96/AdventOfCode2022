@@ -23,14 +23,7 @@ def do_part1(inp: TextIO) -> int:
 
 
 def do_part2(inp: TextIO) -> int:
-    heap = []
-    for elf_total in gen_elf_totals(inp):
-        if len(heap) < 3:
-            heapq.heappush(heap, elf_total)
-        else:
-            heapq.heappushpop(heap, elf_total)
-
-    return sum(heap)
+    return sum(heapq.nlargest(3, gen_elf_totals(inp)))
 
 
 @click.command()
