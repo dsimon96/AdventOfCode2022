@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "adventofcode2022"
+version = "0.1.0"
+description = ""
+authors = ["David Simon <d@vidsimon.tech>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    { include = "*", from = "src" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.group.dev.dependencies]
+flake8 = "^6.0.0"
+black = {version = "^22.10.0", allow-prereleases = true}
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+run = "cli:cli"
