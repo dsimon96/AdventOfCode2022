@@ -6,19 +6,15 @@ from typing import TextIO
 
 def do_part1(inp: TextIO) -> int:
     max_elf_total = 0
-    done = False
-    while not done:
-        this_elf_total = 0
-        for line in inp:
-            line = line.rstrip()
-            if not line:
-                break
+    this_elf_total = 0
+    while line := inp.readline():
+        line = line.rstrip()
+        if not line:
+            max_elf_total = max(max_elf_total, this_elf_total)
+            this_elf_total = 0
+            continue
 
-            this_elf_total += int(line)
-        else:
-            done = True
-
-        max_elf_total = max(max_elf_total, this_elf_total)
+        this_elf_total += int(line)
 
     return max_elf_total
 
