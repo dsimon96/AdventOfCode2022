@@ -1,9 +1,14 @@
-import click
+import logging
+from typing import TextIO
 
-import common
+logger = logging.getLogger(__name__)
 
 
-@click.command()
-@common.common_options
-def day0(part: int):
-    print(f"Running part {part}")
+def part1(inp: TextIO) -> int:
+    logger.info("Running part 1")
+    return 1
+
+
+def part2(inp: TextIO) -> int:
+    logger.info("Running part 2")
+    return 2

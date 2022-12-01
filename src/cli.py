@@ -1,25 +1,26 @@
-from glob import glob
+import logging
 from importlib import import_module
-from os.path import dirname
 from types import ModuleType
-from typing import List
+from typing import Callable, TextIO
 
 import click
 
-# Dynamic imports are an ugly and unsafe hack, but this is for my use only. This
-# matches day*.py files in the same directory as this file.
-sol_modules: List[ModuleType] = []
-for filename in glob("day*.py", root_dir=dirname(__file__)):
-    sol_modules.append(import_module(filename[:-3]))
+
+def get_mod(n: int) -> ModuleType:
+    return import_module(f"day{n}")
 
 
-@click.group()
-def cli():
-    pass
+def get_sol(day: int, part: int) -> Callable[[TextIO], int]:
+    return getattr(get_mod(day), f"part{part}")
 
 
-# Programmatically discover and register click commands in the solution modules
-for sol_module in sol_modules:
-    for cls in sol_module.__dict__.values():
-        if isinstance(cls, click.core.Command):
-            cli.add_command(cls)
+@click.command()
+@click.option("-d", "--day", required=True, type=int)
+@click.option("-p", "--part", required=True, type=int)
+@click.option("-v", "--verbose", is_flag=True, type=bool)
+@click.argument("input", type=click.File(mode="r"))
+def cli(day: int, part: int, verbose: bool, input: TextIO):
+    logging.basicConfig(level=logging.DEBUG if verbose else logging.WARNING)
+    if verbose:
+        logging.info("Enabling verbose logging")
+    print(get_sol(day, part)(input))
