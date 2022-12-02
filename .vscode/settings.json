@@ -6,4 +6,5 @@
     ],
     "isort.check": true,
     "python.linting.flake8Enabled": true,
+    "python.analysis.typeCheckingMode": "strict",
 }
