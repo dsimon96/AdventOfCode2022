@@ -70,3 +70,42 @@ def part1(inp: TextIO):
         )
 
     return len(visible_coords)
+
+
+def get_blockage_dist(
+    heightmap: HeightMap, height: int, coord_it: Iterator[Coords]
+) -> int:
+    n = 0
+    for coord in coord_it:
+        n += 1
+        if heightmap[coord] >= height:
+            break
+
+    return n
+
+
+def part2(inp: TextIO):
+    heightmap = parse_heightmap(inp)
+
+    max_score = 0
+    for r in range(heightmap.height):
+        for c in range(heightmap.width):
+            height = heightmap[(r, c)]
+            score = (
+                get_blockage_dist(
+                    heightmap, height, ((r, c) for r in range(r - 1, -1, -1))
+                )
+                * get_blockage_dist(
+                    heightmap, height, ((r, c) for r in range(r + 1, heightmap.height))
+                )
+                * get_blockage_dist(
+                    heightmap, height, ((r, c) for c in range(c - 1, -1, -1))
+                )
+                * get_blockage_dist(
+                    heightmap, height, ((r, c) for c in range(c + 1, heightmap.width))
+                )
+            )
+
+            max_score = max(max_score, score)
+
+    return max_score
