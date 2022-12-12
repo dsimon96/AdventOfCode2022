@@ -1,6 +1,6 @@
 from collections import deque
 from dataclasses import dataclass
-from typing import Annotated, Callable, TextIO
+from typing import Callable, TextIO
 
 
 @dataclass(frozen=True)
@@ -25,6 +25,17 @@ class Map:
     @property
     def width(self) -> int:
         return len(self.data[0])
+
+    def __getitem__(self, coords: Vec2) -> int:
+        return self.data[coords.y][coords.x]
+
+    def __contains__(self, coords: Vec2) -> bool:
+        return (
+            0 <= coords.x
+            and coords.x < self.width
+            and 0 <= coords.y
+            and coords.y < self.height
+        )
 
 
 def elev(c: str) -> int:
@@ -66,69 +77,44 @@ class SearchNode:
 
 POSSIBLE_STEPS = [Vec2(-1, 0), Vec2(1, 0), Vec2(0, -1), Vec2(0, 1)]
 
-EndConditionFunc = Callable[[Map, Vec2], bool]
 
-TraversabilityFunc = Annotated[
-    Callable[[int, int], bool],
-    """
-    f(cur, next) == True iff search should proceed from a node of height `cur` to a node
-    of height `next`
-    """,
-]
-
-
-def map_bfs_dist(
+def bfs_reverse_dist(
     map: Map,
-    start: Vec2,
-    can_traverse: TraversabilityFunc,
-    is_end: EndConditionFunc,
+    start_pred: Callable[[Map, Vec2], bool],
 ) -> int:
+    """
+    Breadth-first-search backwards from `map.end` until finding coords that satisfy the
+    given predicate, then return the path distance
+    """
     q: deque[SearchNode] = deque()
-    q.append(SearchNode(0, start))
+    q.append(SearchNode(0, map.end))
 
-    visited: set[Vec2] = {start}
+    visited: set[Vec2] = {map.end}
     while q:
         cur = q.popleft()
-        cur_elev = map.data[cur.coords.y][cur.coords.x]
 
         for step in POSSIBLE_STEPS:
-            next = cur.coords + step
-
-            if not (
-                0 <= next.x
-                and next.x < map.width
-                and 0 <= next.y
-                and next.y < map.height
-            ):
+            prev = cur.coords + step
+            if prev in visited:
                 continue
-
-            if not can_traverse(cur_elev, map.data[next.y][next.x]):
+            elif prev not in map:
                 continue
-
-            if is_end(map, next):
+            elif map[cur.coords] > map[prev] + 1:
+                continue
+            elif start_pred(map, prev):
                 return cur.dist + 1
-            elif next in visited:
-                continue
 
-            visited.add(next)
-            q.append(SearchNode(cur.dist + 1, next))
+            visited.add(prev)
+            q.append(SearchNode(cur.dist + 1, prev))
 
     return -1
 
 
 def part1(inp: TextIO) -> int:
     map = get_map(inp)
-    can_climb: TraversabilityFunc = lambda cur, next: next <= cur + 1
-    is_end_coords: EndConditionFunc = lambda map, coords: map.end == coords
-
-    return map_bfs_dist(map, map.start, can_climb, is_end_coords)
+    return bfs_reverse_dist(map, lambda map, coords: coords == map.end)
 
 
 def part2(inp: TextIO) -> int:
     map = get_map(inp)
-    can_climb_in_reverse: TraversabilityFunc = lambda cur, next: cur <= next + 1
-    is_zero_elev: EndConditionFunc = (
-        lambda map, coords: map.data[coords.y][coords.x] == 0
-    )
-
-    return map_bfs_dist(map, map.end, can_climb_in_reverse, is_zero_elev)
+    return bfs_reverse_dist(map, lambda map, coords: map[coords] == 0)
