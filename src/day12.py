@@ -112,7 +112,7 @@ def bfs_reverse_dist(
 
 def part1(inp: TextIO) -> int:
     map = get_map(inp)
-    return bfs_reverse_dist(map, lambda map, coords: coords == map.end)
+    return bfs_reverse_dist(map, lambda map, coords: coords == map.start)
 
 
 def part2(inp: TextIO) -> int:
