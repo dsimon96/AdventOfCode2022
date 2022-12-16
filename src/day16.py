@@ -91,41 +91,35 @@ def max_flow(
     table = np.full((len(graph), time + 1, 1 << len(to_open)), -1, dtype=np.int32)
 
     def max_flow_recursive(cur_node: int, time_left: int, open_valves: int = 0) -> int:
-        "The max flow that can be achieved by opening more valves in the remaining time"
+        """
+        The max total flow that can be achieved by opening more valves, given current
+        conditions.
+        """
         if time_left <= 0:
             return 0
         elif (res := table[cur_node, time_left, open_valves]) >= 0:
             return res
 
         flow_rate, _ = graph[cur_node]
-        max_seen = 0
-        for next_node in to_open:
-            if next_node == cur_node or BitSet.contains(
-                open_valves, mapping[next_node]
-            ):
-                continue
+        total_flow = 0
+        if flow_rate > 0:
+            total_flow = flow_rate * (time_left - 1)
+            time_left -= 1
+            open_valves = BitSet.add(open_valves, mapping[cur_node])
 
-            max_seen = max(
-                max_seen,
+        total_flow += max(
+            (
                 max_flow_recursive(
-                    next_node,
-                    time_left - distances[(cur_node, next_node)],
-                    open_valves,
-                ),
-            )
-        if flow_rate > 0 and not BitSet.contains(open_valves, mapping[cur_node]):
-            max_seen = max(
-                max_seen,
-                flow_rate * (time_left - 1)
-                + max_flow_recursive(
-                    cur_node,
-                    time_left - 1,
-                    BitSet.add(open_valves, mapping[cur_node]),
-                ),
-            )
+                    next_node, time_left - distances[(cur_node, next_node)], open_valves
+                )
+                for next_node in to_open
+                if not BitSet.contains(open_valves, mapping[next_node])
+            ),
+            default=0,
+        )
 
-        table[cur_node, time_left, open_valves] = max_seen
-        return max_seen
+        table[cur_node, time_left, open_valves] = total_flow
+        return total_flow
 
     return max_flow_recursive(start_node, time)
 
