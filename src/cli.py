@@ -24,3 +24,7 @@ def cli(day: int, part: int, verbose: bool, input: TextIO):
     if verbose:
         logging.info("Enabling verbose logging")
     print(get_sol(day, part)(input))
+
+
+if __name__ == "__main__":
+    cli()

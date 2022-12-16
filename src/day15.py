@@ -1,7 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Collection, Generator, Optional, TextIO
-from progress.bar import Bar  # typing: ignore
 
 
 @dataclass(frozen=True)
@@ -49,9 +48,10 @@ class Range:
 class ExclusionZone:
     sensor: Vec2
     beacon: Vec2
+    radius: int = field(init=False)
 
-    def contains(self, other: Vec2) -> bool:
-        return (other - self.sensor).magnitude <= self.radius
+    def __post_init__(self):
+        object.__setattr__(self, "radius", (self.beacon - self.sensor).magnitude)
 
     def intersect_y(self, y: int) -> Optional[Range]:
         remaining = self.radius - abs(y - self.sensor.y)
@@ -59,10 +59,6 @@ class ExclusionZone:
             return None
         else:
             return Range(self.sensor.x - remaining, self.sensor.x + remaining)
-
-    @cached_property
-    def radius(self):
-        return (self.beacon - self.sensor).magnitude
 
 
 def get_exclusion_zones(inp: TextIO) -> Generator[ExclusionZone, None, None]:
@@ -122,30 +118,22 @@ def part1(inp: TextIO) -> int:
     return total_points - occupied_by_beacons
 
 
-def find_sensor_pos_on_line(
-    excl_zones: Collection[ExclusionZone], y: int
-) -> Optional[Vec2]:
-    TARGET_X_RANGE = Range(0, 4000000)
-
-    x = TARGET_X_RANGE.lower_incl
-    while x <= TARGET_X_RANGE.upper_incl:
-        for excl_zone in excl_zones:
-            excl_range = excl_zone.intersect_y(y)
-            if excl_range is not None and excl_range.contains(x):
-                x = excl_range.upper_incl + 1
-                break
-        else:
-            # if we got here, x was not within any range
-            return Vec2(x, y)
-
-
 def part2(inp: TextIO) -> int:
-    TARGET_Y_RANGE = Range(0, 4000000)
     excl_zones = list(get_exclusion_zones(inp))
-    with Bar("Searching", max=TARGET_Y_RANGE.num_points) as bar:
-        for y in range(TARGET_Y_RANGE.lower_incl, TARGET_Y_RANGE.upper_incl + 1):
-            if (pos := find_sensor_pos_on_line(excl_zones, y)) is not None:
-                return 4000000 * pos.x + pos.y
-            bar.next()
+    for y in range(0, 4000001):
+        x = 0
+        while x <= 4000000:
+            for zone in excl_zones:
+                remaining = zone.radius - abs(zone.sensor.y - y)
+                if remaining < 0:
+                    continue
+                lower = zone.sensor.x - remaining
+                upper = zone.sensor.x + remaining
+                if lower <= x <= upper:
+                    x = upper + 1
+                    break
+            else:
+                # if we got here, x was not within any range
+                return 4000000 * x + y
 
     return -1
