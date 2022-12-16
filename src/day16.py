@@ -1,5 +1,7 @@
+from concurrent.futures import Future, ProcessPoolExecutor, as_completed
 from typing import Generator, Iterable, Iterator, TextIO, TypeVar
 from itertools import chain, combinations
+from tqdm import tqdm
 import numpy as np
 
 Node = int
@@ -151,33 +153,41 @@ def all_set_partitions(
         yield set(my_nodes), orig.difference(my_nodes)
 
 
+def max_flow_partitioned(
+    graph: ValveGraph,
+    distances: NodeDistances,
+    my_set: set[Node],
+    eleph_set: set[Node],
+    start_node: Node,
+    time: int,
+) -> int:
+    return max_flow(graph, distances, my_set, start_node, time) + max_flow(
+        graph, distances, eleph_set, start_node, time
+    )
+
+
 def part2(inp: TextIO) -> int:
     assignments, graph = get_graph(inp)
     distances = get_distances(graph)
     nonzero_nodes = {k for k, v in graph.items() if v[0] > 0}
     aa = assignments.get("AA")
 
-    max_seen = 0
-    pset = list(powerset(nonzero_nodes))
-    for my_nodes in pset[: len(pset) // 2]:
-        my_set = set(my_nodes)
-        eleph_set = nonzero_nodes.difference(my_nodes)
-        max_seen = max(
-            max_seen,
-            max_flow(
-                graph,
-                distances,
-                my_set,
-                aa,
-                26,
+    with ProcessPoolExecutor() as ex:
+        fs: list[Future[int]] = []
+        pset = list(powerset(nonzero_nodes))
+        for my_nodes in pset[: len(pset) // 2]:
+            my_set = set(my_nodes)
+            eleph_set = nonzero_nodes.difference(my_nodes)
+            fs.append(
+                ex.submit(
+                    max_flow_partitioned,
+                    graph,
+                    distances,
+                    my_set,
+                    eleph_set,
+                    aa,
+                    26,
+                )
             )
-            + max_flow(
-                graph,
-                distances,
-                eleph_set,
-                aa,
-                26,
-            ),
-        )
 
-    return max_seen
+        return max(f.result() for f in tqdm(as_completed(fs), total=len(pset) // 2))
