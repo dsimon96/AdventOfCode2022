@@ -11,6 +11,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.10"
+more-itertools = "^9.0.0"
 numpy = "^1.23.5"
 tqdm = "^4.64.1"
 
