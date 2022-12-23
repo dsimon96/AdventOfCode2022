@@ -2,8 +2,6 @@ from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import Iterator, Optional, TextIO, Type
 
-CUBE_SIDE_LENGTH = 50
-
 
 class Heading(IntEnum):
     RIGHT = 0
@@ -146,5 +144,56 @@ def navigate(m: Map, moves: Iterator[Move]) -> int:
 
 def part1(inp: TextIO) -> int:
     m, moves = parse_inp(inp, Map)
+
+    return navigate(m, moves)
+
+
+class HardcodedCubeMap(Map):
+    def get_next(self, s: State) -> State:
+        match s.hdg:
+            case Heading.UP:
+                if s.y > 0 and self.data[s.y - 1][s.x] is not None:
+                    return State(s.x, s.y - 1, s.hdg)
+                elif s.x < 50:
+                    return State(50, 50 + s.x, Heading.RIGHT)
+                elif s.x < 100:
+                    return State(0, 150 + s.x - 50, Heading.RIGHT)
+                else:
+                    return State(s.x - 100, 199, Heading.UP)
+            case Heading.LEFT:
+                if s.x > 0 and self.data[s.y][s.x - 1] is not None:
+                    return State(s.x - 1, s.y, s.hdg)
+                elif s.y < 50:
+                    return State(0, 149 - s.y, Heading.RIGHT)
+                elif s.y < 100:
+                    return State(s.y - 50, 100, Heading.DOWN)
+                elif s.y < 150:
+                    return State(50, 49 - (s.y - 100), Heading.RIGHT)
+                else:
+                    return State(50 + (s.y - 150), 0, Heading.DOWN)
+            case Heading.DOWN:
+                if s.y < len(self.data) - 1 and s.x < len(self.data[s.y + 1]):
+                    return State(s.x, s.y + 1, s.hdg)
+                elif s.x < 50:
+                    return State(100 + s.x, 0, Heading.DOWN)
+                elif s.x < 100:
+                    return State(49, 150 + (s.x - 50), Heading.LEFT)
+                else:
+                    return State(99, 50 + (s.x - 100), Heading.LEFT)
+            case Heading.RIGHT:
+                if s.x < len(self.data[s.y]) - 1:
+                    return State(s.x + 1, s.y, s.hdg)
+                elif s.y < 50:
+                    return State(99, 149 - s.y, Heading.LEFT)
+                elif s.y < 100:
+                    return State(100 + (s.y - 50), 49, Heading.UP)
+                elif s.y < 150:
+                    return State(149, 49 - (s.y - 100), Heading.LEFT)
+                else:
+                    return State(50 + (s.y - 150), 149, Heading.UP)
+
+
+def part2(inp: TextIO) -> int:
+    m, moves = parse_inp(inp, HardcodedCubeMap)
 
     return navigate(m, moves)
